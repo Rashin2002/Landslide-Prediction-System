@@ -1,0 +1,573 @@
+<!-- <!-- <!DOCTYPE html>
+<html>
+<head>
+  <title>Landslide Detection Dashboard</title>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body { font-family: Arial; padding: 20px; }
+    canvas { max-width: 100%; }
+  </style>
+</head>
+<body>
+
+<h2>Landslide Detection Dashboard</h2>
+<div>
+  <canvas id="moistureChart"></canvas>
+  <canvas id="rainfallChart"></canvas>
+  <canvas id="soundChart"></canvas>
+</div>
+
+<script type="module">
+  // TODO: Replace with your Firebase project config
+  const firebaseConfig = {
+    apiKey: "YOUR_API_KEY",
+    authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+    databaseURL: "https://YOUR_PROJECT_ID.firebaseio.com",
+    projectId: "YOUR_PROJECT_ID",
+    storageBucket: "YOUR_PROJECT_ID.appspot.com",
+    messagingSenderId: "YOUR_SENDER_ID",
+    appId: "YOUR_APP_ID"
+  };
+
+  // Initialize Firebase
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js";
+  import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-database.js";
+
+  const app = initializeApp(firebaseConfig);
+  const db = getDatabase(app);
+  const dataRef = ref(db, 'landslide_data');
+
+  // Charts Setup
+  const ctxMoisture = document.getElementById('moistureChart').getContext('2d');
+  const ctxRainfall = document.getElementById('rainfallChart').getContext('2d');
+  const ctxSound = document.getElementById('soundChart').getContext('2d');
+
+  const labels = [];
+  const moistureData = [];
+  const rainfallData = [];
+  const soundData = [];
+
+  const moistureChart = new Chart(ctxMoisture, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [{
+        label: 'Soil Moisture',
+        data: moistureData,
+        borderColor: 'blue',
+        fill: false
+      }]
+    }
+  });
+
+  const rainfallChart = new Chart(ctxRainfall, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [{
+        label: 'Rainfall',
+        data: rainfallData,
+        borderColor: 'green',
+        fill: false
+      }]
+    }
+  });
+
+  const soundChart = new Chart(ctxSound, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [{
+        label: 'Sound Level',
+        data: soundData,
+        borderColor: 'red',
+        fill: false
+      }]
+    }
+  });
+
+  // Fetch data
+  onValue(dataRef, (snapshot) => {
+    const data = snapshot.val();
+    labels.length = 0;
+    moistureData.length = 0;
+    rainfallData.length = 0;
+    soundData.length = 0;
+
+    Object.values(data).forEach(entry => {
+      labels.push(new Date(entry.timestamp).toLocaleTimeString());
+      moistureData.push(entry.soil_moisture);
+      rainfallData.push(entry.rainfall);
+      soundData.push(entry.sound_level);
+    });
+
+    moistureChart.update();
+    rainfallChart.update();
+    soundChart.update();
+  });
+</script>
+</body>
+</html> -->
+
+
+<!-- <!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Landslide Detection Dashboard</title>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #f0f4f8;
+      padding: 20px;
+      margin: 0;
+    }
+    h1 {
+      text-align: center;
+      color: #2c3e50;
+    }
+    .chart-container {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+      gap: 20px;
+      margin-top: 30px;
+    }
+    .card {
+      background: white;
+      padding: 20px;
+      border-radius: 16px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    }
+    .risk-level {
+      text-align: center;
+      font-size: 1.5rem;
+      margin-top: 30px;
+    }
+    .risk-low {
+      color: green;
+    }
+    .risk-medium {
+      color: orange;
+    }
+    .risk-high {
+      color: red;
+    }
+  </style>
+</head>
+<body>
+
+<h1>Landslide Detection IoT Dashboard</h1>
+
+<div class="chart-container">
+  <div class="card"><canvas id="moistureChart"></canvas></div>
+  <div class="card"><canvas id="rainfallChart"></canvas></div>
+  <div class="card"><canvas id="soundChart"></canvas></div>
+  <div class="card"><canvas id="gyroChart"></canvas></div>
+</div>
+
+<div class="risk-level" id="riskStatus">Loading risk level...</div>
+
+<script type="module">
+  // ==== Firebase Setup ====
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js";
+  import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-database.js";
+
+  const firebaseConfig = {
+    apiKey: "YOUR_API_KEY",
+    authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+    databaseURL: "https://YOUR_PROJECT_ID.firebaseio.com",
+    projectId: "YOUR_PROJECT_ID",
+    storageBucket: "YOUR_PROJECT_ID.appspot.com",
+    messagingSenderId: "YOUR_SENDER_ID",
+    appId: "YOUR_APP_ID"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getDatabase(app);
+  const dataRef = ref(db, 'landslide_data');
+
+  // ==== Chart Initialization ====
+  const labels = [];
+  const moistureData = [], rainfallData = [], soundData = [];
+  const gyroData = { x: [], y: [], z: [] };
+
+  const chartOptions = (label, color) => ({
+    type: 'line',
+    data: {
+      labels: labels,
+      datasets: [{
+        label: label,
+        data: [],
+        borderColor: color,
+        backgroundColor: color + '33',
+        fill: true,
+        tension: 0.3
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: { legend: { display: true } },
+      scales: {
+        x: { title: { display: true, text: 'Time' } },
+        y: { title: { display: true, text: label } }
+      }
+    }
+  });
+
+  const moistureChart = new Chart(document.getElementById('moistureChart'), chartOptions('Soil Moisture (%)', '#3498db'));
+  const rainfallChart = new Chart(document.getElementById('rainfallChart'), chartOptions('Rainfall (mm)', '#2ecc71'));
+  const soundChart = new Chart(document.getElementById('soundChart'), chartOptions('Sound Level (dB)', '#e74c3c'));
+
+  const gyroChart = new Chart(document.getElementById('gyroChart'), {
+    type: 'line',
+    data: {
+      labels: labels,
+      datasets: [
+        { label: 'Gyro X', data: gyroData.x, borderColor: '#9b59b6', fill: false },
+        { label: 'Gyro Y', data: gyroData.y, borderColor: '#f1c40f', fill: false },
+        { label: 'Gyro Z', data: gyroData.z, borderColor: '#34495e', fill: false }
+      ]
+    },
+    options: {
+      responsive: true,
+      plugins: { legend: { display: true } },
+      scales: {
+        x: { title: { display: true, text: 'Time' } },
+        y: { title: { display: true, text: 'Gyro Values' } }
+      }
+    }
+  });
+
+  const riskStatus = document.getElementById('riskStatus');
+
+  // ==== Data Listener ====
+  onValue(dataRef, (snapshot) => {
+    const data = snapshot.val();
+    const entries = Object.values(data).slice(-10); // Get last 10 entries
+
+    labels.length = 0;
+    moistureData.length = 0;
+    rainfallData.length = 0;
+    soundData.length = 0;
+    gyroData.x.length = 0;
+    gyroData.y.length = 0;
+    gyroData.z.length = 0;
+
+    entries.forEach(entry => {
+      const time = new Date(entry.timestamp).toLocaleTimeString();
+      labels.push(time);
+      moistureData.push(entry.soil_moisture);
+      rainfallData.push(entry.rainfall);
+      soundData.push(entry.sound_level);
+      gyroData.x.push(entry.gyroscope?.x || 0);
+      gyroData.y.push(entry.gyroscope?.y || 0);
+      gyroData.z.push(entry.gyroscope?.z || 0);
+    });
+
+    // Update Charts
+    moistureChart.data.labels = labels;
+    moistureChart.data.datasets[0].data = moistureData;
+    moistureChart.update();
+
+    rainfallChart.data.labels = labels;
+    rainfallChart.data.datasets[0].data = rainfallData;
+    rainfallChart.update();
+
+    soundChart.data.labels = labels;
+    soundChart.data.datasets[0].data = soundData;
+    soundChart.update();
+
+    gyroChart.data.labels = labels;
+    gyroChart.data.datasets[0].data = gyroData.x;
+    gyroChart.data.datasets[1].data = gyroData.y;
+    gyroChart.data.datasets[2].data = gyroData.z;
+    gyroChart.update();
+
+    // Show Risk Level from most recent entry
+    const latest = entries[entries.length - 1];
+    const risk = latest.risk_level || "Unknown";
+    riskStatus.textContent = Current Risk Level: ${risk};
+    riskStatus.className = 'risk-level ' + (
+      risk.toLowerCase() === 'high' ? 'risk-high' :
+      risk.toLowerCase() === 'medium' ? 'risk-medium' :
+      'risk-low'
+    );
+  });
+</script>
+
+</body>
+</html> --> 
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Landslide Detection Dashboard</title>
+    <style>
+        /* Basic styling for demonstration - ideally this would be in a separate CSS file */
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #eaf1da; /* Light green background similar to the image */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+        }
+        .dashboard-container {
+            background-color: #eaf1da; /* Same as body for seamless look */
+            padding: 20px;
+            border-radius: 10px;
+            width: 90%; /* Adjust as needed */
+            max-width: 1200px; /* Max width for larger screens */
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1); /* Subtle shadow for the overall container if desired */
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        .dashboard-header {
+            text-align: center;
+            font-size: 2em;
+            margin-bottom: 20px;
+            color: #333;
+        }
+        .dashboard-content {
+            display: flex;
+            gap: 30px; /* Space between left and right sections */
+            justify-content: center;
+            align-items: flex-start; /* Align items to the top */
+        }
+        .left-section {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            align-items: center;
+        }
+        .bar-chart {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-bottom: 10px;
+            position: relative;
+            height: 200px; /* Fixed height for the bar */
+            width: 80px; /* Width of the bar */
+            background-color: white; /* Empty part of the bar */
+            border-radius: 5px;
+            overflow: hidden; /* To ensure the filled part stays within bounds */
+        }
+        .bar-chart .fill {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            background-color: #8c7c59; /* Brown fill color */
+            border-radius: 5px; /* Match outer border radius */
+        }
+        .bar-chart-label {
+            margin-top: 5px;
+            font-size: 1.1em;
+            color: #555;
+        }
+        .bar-chart-unit {
+            position: absolute;
+            top: -20px;
+            font-size: 0.9em;
+            color: #555;
+        }
+
+        .right-section {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            flex-grow: 1; /* Allow right section to take available space */
+        }
+        .row {
+            display: flex;
+            gap: 20px;
+            justify-content: space-between;
+        }
+        .card {
+            background-color: #b7ce96; /* Greenish background for cards */
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: #333;
+            border: 2px solid #a3b98c; /* Darker green border */
+        }
+        .card.wide {
+            flex: 1; /* Take full available width */
+            padding: 30px;
+        }
+        .card.flex-1 {
+            flex: 1; /* Equal width for cards in a row */
+        }
+        .card-title {
+            font-size: 1.2em;
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #4a5c37; /* Darker green for title */
+        }
+        .card-value {
+            font-size: 2.5em;
+            font-weight: bold;
+            color: #333;
+        }
+        .card-sub-value {
+            font-size: 1.5em;
+            margin-top: 5px;
+            color: #555;
+            text-align: center;
+        }
+        .gyro-coords {
+            display: flex;
+            gap: 15px;
+            font-size: 1.2em;
+        }
+        .gyro-coords span {
+            display: block;
+            text-align: center;
+        }
+        .gyro-coords strong {
+            font-size: 1.3em;
+            display: block;
+        }
+
+        .land-movement-card {
+            flex: 1; /* Take equal space with sliders */
+        }
+        .land-movement-status {
+            font-size: 2em;
+            font-weight: bold;
+            padding: 10px 20px;
+            background-color: #8c7c59; /* Brown button-like background */
+            color: white;
+            border-radius: 5px;
+            margin-top: 10px;
+        }
+        .sliders-section {
+            flex: 1; /* Take equal space with land movement card */
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end; /* Align sliders to the right */
+            gap: 15px;
+        }
+        .slider-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .slider-group label {
+            font-size: 1.2em;
+            font-weight: bold;
+            color: #555;
+            width: 20px; /* Align labels */
+            text-align: right;
+        }
+        .slider {
+            width: 150px; /* Width of the slider */
+            height: 5px;
+            background-color: #8c7c59; /* Brown track */
+            border-radius: 5px;
+            -webkit-appearance: none;
+            appearance: none;
+            outline: none;
+        }
+        .slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            background: #b7ce96; /* Green thumb */
+            border: 2px solid #8c7c59; /* Brown border */
+            border-radius: 50%;
+            cursor: pointer;
+        }
+        .slider::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            background: #b7ce96;
+            border: 2px solid #8c7c59;
+            border-radius: 50%;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="dashboard-container">
+        <h1 class="dashboard-header">Landslide Detection Dashboard</h1>
+
+        <div class="dashboard-content">
+            <div class="left-section">
+                <div class="bar-chart">
+                    <span class="bar-chart-unit">mm</span>
+                    <div class="fill" style="height: 60%;"></div> </div>
+                <div class="bar-chart-label">RainFall</div>
+
+                <div class="bar-chart">
+                    <span class="bar-chart-unit">dB</span>
+                    <div class="fill" style="height: 40%;"></div> </div>
+                <div class="bar-chart-label">Sound-Level</div>
+            </div>
+
+            <div class="right-section">
+                <div class="row">
+                    <div class="card flex-1">
+                        <div class="card-title">Soil Moisture</div>
+                        <div class="card-value">45 %</div>
+                    </div>
+
+                    <div class="card flex-1">
+                        <div class="card-title">Gyro Position</div>
+                        <div class="gyro-coords">
+                            <span>X<br><strong>0.05</strong></span>
+                            <span>Y<br><strong>0.02</strong></span>
+                            <span>Z<br><strong>0.03</strong></span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="card flex-1 land-movement-card">
+                        <div class="card-title">Land Movement</div>
+                        <div class="land-movement-status">Not-Detected</div>
+                    </div>
+
+                    <div class="sliders-section flex-1">
+                        <div class="slider-group">
+                            <label for="gyro-x">X</label>
+                            <input type="range" id="gyro-x" class="slider" min="0" max="100" value="50">
+                        </div>
+                        <div class="slider-group">
+                            <label for="gyro-y">Y</label>
+                            <input type="range" id="gyro-y" class="slider" min="0" max="100" value="30">
+                        </div>
+                        <div class="slider-group">
+                            <label for="gyro-z">Z</label>
+                            <input type="range" id="gyro-z" class="slider" min="0" max="100" value="70">
+                        </div>
+                        <div style="font-size: 1.1em; margin-top: 10px; color: #555;">Gyro Acceleration</div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="card wide">
+                        <div class="card-title" style="font-size: 2em;">Risk Level</div>
+                        <div class="card-value" style="font-size: 4em;">0.03%</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</body>
+</html>
